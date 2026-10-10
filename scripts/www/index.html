@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MD3 待办 · 圆0.6</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --md-primary: #6750A4;
+    --md-on-primary: #FFFFFF;
+    --md-primary-container: #EADDFF;
+    --md-on-primary-container: #21005D;
+    --md-surface: #FEF7FF;
+    --md-on-surface: #1D1B20;
+    --md-surface-variant: #E7E0EC;
+    --md-on-surface-variant: #49454F;
+    --md-outline: #79747E;
+    --md-surface-container: #F3EDF7;
+    --md-surface-container-high: #ECE6F0;
+    --md-surface-container-highest: #E6E0E9;
+    --md-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08);
+    --md-shadow-elevated: 0 4px 8px rgba(0,0,0,0.18), 0 12px 32px rgba(0,0,0,0.22);
+    --ui-scale: 1;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--md-surface);
+    color: var(--md-on-surface);
+    transition: background 0.3s, color 0.3s;
+  }
+
+  body.dark {
+    --md-primary: #D0BCFF;
+    --md-on-primary: #381E72;
+    --md-primary-container: #4F378B;
+    --md-on-primary-container: #EADDFF;
+    --md-surface: #141218;
+    --md-on-surface: #E6E0E9;
+    --md-surface-variant: #49454F;
+    --md-on-surface-variant: #CAC4D0;
+    --md-outline: #938F99;
+    --md-surface-container: #1D1B20;
+    --md-surface-container-high: #211F26;
+    --md-surface-container-highest: #2B2930;
+  }
+
+  .app {
+    position: fixed;
+    inset: 0;
+    background: var(--md-surface-container);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(12px * var(--ui-scale)) calc(16px * var(--ui-scale));
+    padding-top: max(calc(12px * var(--ui-scale)), env(safe-area-inset-top));
+    padding-left: max(calc(16px * var(--ui-scale)), env(safe-area-inset-left));
+    padding-right: max(calc(16px * var(--ui-scale)), env(safe-area-inset-right));
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(121,116,126,0.12);
+  }
+
+  .title {
+    font-size: calc(20px * var(--ui-scale));
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--ui-scale));
+  }
+  .title .emoji { font-size: calc(24px * var(--ui-scale)); }
+
+  .icon-btn {
+    width: calc(44px * var(--ui-scale));
+    height: calc(44px * var(--ui-scale));
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--md-on-surface-variant);
+    font-size: calc(20px * var(--ui-scale));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .icon-btn:hover { background: var(--md-surface-container-highest); }
+  .icon-btn:active { background: var(--md-primary-container); }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding: calc(12px * var(--ui-scale));
+    padding-left: max(calc(12px * var(--ui-scale)), env(safe-area-inset-left));
+    padding-right: max(calc(12px * var(--ui-scale)), env(safe-area-inset-right));
+    padding-bottom: max(calc(12px * var(--ui-scale)), env(safe-area-inset-bottom));
+    gap: calc(12px * var(--ui-scale));
+  }
+
+  @media (orientation: landscape) and (min-width: 600px) {
+    .main { flex-direction: row; }
+    .side-panel { width: 38%; max-width: 380px; }
+  }
+
+  @media (min-width: 1100px) {
+    .main { max-width: 1200px; margin: 0 auto; width: 100%; }
+  }
+
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: calc(12px * var(--ui-scale));
+    flex-shrink: 0;
+    min-height: 0;
+  }
+  @media (orientation: portrait), (max-width: 599px) {
+    .side-panel { width: 100%; }
+  }
+
+  .input-row { display: flex; gap: calc(8px * var(--ui-scale)); align-items: center; }
+
+  .textfield {
+    flex: 1;
+    background: var(--md-surface-container-highest);
+    border-radius: calc(12px * var(--ui-scale));
+    border: 1px solid var(--md-outline);
+    padding: 0 calc(16px * var(--ui-scale));
+    height: calc(52px * var(--ui-scale));
+    display: flex;
+    align-items: center;
+    transition: border-color 0.2s;
+  }
+  .textfield:focus-within { border: 2px solid var(--md-primary); padding: 0 calc(15px * var(--ui-scale)); }
+  .textfield input {
+    width: 100%; background: transparent; border: none; outline: none;
+    font-size: calc(15px * var(--ui-scale));
+    font-family: inherit;
+    color: var(--md-on-surface);
+  }
+  .textfield input::placeholder { color: var(--md-on-surface-variant); opacity: 0.7; }
+
+  .add-btn {
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    border: none;
+    border-radius: 100px;
+    height: calc(52px * var(--ui-scale));
+    padding: 0 calc(20px * var(--ui-scale));
+    font-size: calc(15px * var(--ui-scale));
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: calc(6px * var(--ui-scale));
+    font-family: inherit;
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+    box-shadow: var(--md-shadow);
+    flex-shrink: 0;
+  }
+  .add-btn:hover { background: #5a4590; }
+  .add-btn:active { transform: scale(0.96); }
+
+  .stat-card {
+    background: var(--md-surface-container-high);
+    border-radius: calc(16px * var(--ui-scale));
+    padding: calc(16px * var(--ui-scale));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .stat-card .num {
+    font-size: calc(28px * var(--ui-scale));
+    font-weight: 500;
+    color: var(--md-primary);
+    line-height: 1;
+  }
+  .stat-card .label {
+    font-size: calc(12px * var(--ui-scale));
+    color: var(--md-on-surface-variant);
+    opacity: 0.7;
+    margin-bottom: 4px;
+  }
+
+  .list-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--md-surface-container-high);
+    border-radius: calc(16px * var(--ui-scale));
+    overflow: hidden;
+  }
+
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(12px * var(--ui-scale)) calc(16px * var(--ui-scale));
+    font-size: calc(14px * var(--ui-scale));
+    color: var(--md-on-surface-variant);
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(121,116,126,0.12);
+  }
+
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--md-outline);
+    border-radius: 100px;
+    padding: calc(4px * var(--ui-scale)) calc(12px * var(--ui-scale));
+    font-size: calc(12px * var(--ui-scale));
+    font-family: inherit;
+    color: var(--md-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .clear-btn:hover { background: var(--md-primary-container); }
+
+  .todo-list {
+    list-style: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: calc(8px * var(--ui-scale));
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--ui-scale));
+    -webkit-overflow-scrolling: touch;
+  }
+  .todo-list::-webkit-scrollbar { width: 6px; }
+  .todo-list::-webkit-scrollbar-thumb { background: var(--md-outline); border-radius: 100px; }
+
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: calc(12px * var(--ui-scale));
+    padding: calc(12px * var(--ui-scale)) calc(14px * var(--ui-scale));
+    background: var(--md-surface-container-highest);
+    border-radius: calc(14px * var(--ui-scale));
+    transition: background 0.2s, opacity 0.3s;
+    animation: itemIn 0.3s cubic-bezier(0.2, 0, 0, 1);
+  }
+  @keyframes itemIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .todo-item:hover { background: var(--md-surface-variant); }
+  .todo-item.completed { opacity: 0.45; }
+  .todo-item.completed .todo-text { text-decoration: line-through; color: var(--md-on-surface-variant); }
+
+  .checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: calc(24px * var(--ui-scale));
+    height: calc(24px * var(--ui-scale));
+    border: 2px solid var(--md-outline);
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .checkbox:hover { border-color: var(--md-primary); }
+  .checkbox:checked { background: var(--md-primary); border-color: var(--md-primary); }
+  .checkbox:checked::after {
+    content: "";
+    position: absolute;
+    left: 30%; top: 12%;
+    width: 25%; height: 48%;
+    border: solid var(--md-on-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    animation: checkDraw 0.25s ease-out;
+  }
+  @keyframes checkDraw {
+    from { opacity: 0; transform: rotate(45deg) scale(0.4); }
+    to { opacity: 1; transform: rotate(45deg) scale(1); }
+  }
+
+  .todo-text {
+    flex: 1;
+    font-size: calc(15px * var(--ui-scale));
+    word-break: break-word;
+    line-height: 1.4;
+  }
+
+  .delete-btn {
+    background: transparent;
+    border: none;
+    width: calc(32px * var(--ui-scale));
+    height: calc(32px * var(--ui-scale));
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--md-on-surface-variant);
+    font-size: calc(16px * var(--ui-scale));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+  }
+  .delete-btn:hover { background: var(--md-surface-variant); color: #B3261E; }
+
+  .empty {
+    text-align: center;
+    padding: calc(40px * var(--ui-scale)) 20px;
+    color: var(--md-on-surface-variant);
+    opacity: 0.6;
+    font-size: calc(14px * var(--ui-scale));
+    font-style: italic;
+  }
+
+  /* ========== 背景蒙层 ========== */
+  .dismiss-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .dismiss-overlay.show { opacity: 1; }
+
+  /* ========== 圆生长成胖胶囊（内容不斜） ========== */
+  .done-popup {
+    position: fixed;
+    pointer-events: auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--md-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--md-on-primary);
+    opacity: 0;
+    transform-origin: center center;
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 1001;
+  }
+
+  /* 内容包裹层：反向旋转 -45°，抵消胶囊的 +45°，让字正着 */
+  .done-popup .popup-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    transform: rotate(-45deg);
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  .done-popup .popup-check {
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .done-popup .popup-check svg {
+    width: 100%;
+    height: 100%;
+    stroke: var(--md-on-primary);
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .done-popup .popup-check svg path {
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+  }
+  .done-popup.show .popup-check svg path {
+    animation: drawCheck 0.5s 0.4s ease-out forwards;
+  }
+  @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+
+  .done-popup .popup-label {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: 5px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.35s 0.5s, transform 0.35s 0.5s;
+  }
+  .done-popup.show .popup-label {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ========== 设置面板 ========== */
+  .settings-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .settings-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .settings-panel {
+    background: var(--md-surface-container-high);
+    border-radius: calc(28px * var(--ui-scale));
+    padding: calc(24px * var(--ui-scale));
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--md-shadow-elevated);
+    transform: scale(0.92);
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .settings-overlay.open .settings-panel { transform: scale(1); }
+
+  .settings-title {
+    font-size: calc(20px * var(--ui-scale));
+    font-weight: 500;
+    margin-bottom: calc(20px * var(--ui-scale));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .settings-group { margin-bottom: calc(20px * var(--ui-scale)); }
+
+  .settings-label {
+    font-size: calc(13px * var(--ui-scale));
+    color: var(--md-on-surface-variant);
+    margin-bottom: calc(10px * var(--ui-scale));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .settings-value { color: var(--md-primary); font-weight: 500; font-size: calc(14px * var(--ui-scale)); }
+
+  .md3-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: calc(8px * var(--ui-scale));
+    border-radius: 100px;
+    background: var(--md-surface-variant);
+    outline: none;
+    cursor: pointer;
+  }
+  .md3-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: calc(24px * var(--ui-scale));
+    height: calc(24px * var(--ui-scale));
+    border-radius: 50%;
+    background: var(--md-primary);
+    cursor: pointer;
+    box-shadow: var(--md-shadow);
+  }
+  .md3-slider::-moz-range-thumb {
+    width: calc(24px * var(--ui-scale));
+    height: calc(24px * var(--ui-scale));
+    border-radius: 50%;
+    background: var(--md-primary);
+    cursor: pointer;
+    border: none;
+  }
+
+  .slider-marks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: calc(6px * var(--ui-scale));
+    font-size: calc(11px * var(--ui-scale));
+    color: var(--md-on-surface-variant);
+    opacity: 0.6;
+  }
+
+  .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: calc(20px * var(--ui-scale)); }
+
+  .btn-text {
+    background: transparent; border: none;
+    color: var(--md-primary);
+    font-family: inherit;
+    font-size: calc(14px * var(--ui-scale));
+    font-weight: 500;
+    padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale));
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-text:hover { background: var(--md-primary-container); }
+
+  .btn-filled {
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    border: none;
+    font-family: inherit;
+    font-size: calc(14px * var(--ui-scale));
+    font-weight: 500;
+    padding: calc(10px * var(--ui-scale)) calc(20px * var(--ui-scale));
+    border-radius: 100px;
+    cursor: pointer;
+    box-shadow: var(--md-shadow);
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn-filled:hover { background: #5a4590; }
+  .btn-filled:active { transform: scale(0.96); }
+
+  .switch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(8px * var(--ui-scale)) 0;
+    font-size: calc(14px * var(--ui-scale));
+  }
+
+  .switch {
+    position: relative;
+    width: calc(52px * var(--ui-scale));
+    height: calc(32px * var(--ui-scale));
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; cursor: pointer;
+    inset: 0;
+    background: var(--md-surface-variant);
+    border: 2px solid var(--md-outline);
+    border-radius: 100px;
+    transition: background 0.25s, border-color 0.25s;
+  }
+  .switch .slider::before {
+    content: "";
+    position: absolute;
+    height: calc(16px * var(--ui-scale));
+    width: calc(16px * var(--ui-scale));
+    left: calc(6px * var(--ui-scale));
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--md-outline);
+    border-radius: 50%;
+    transition: transform 0.25s, background 0.25s;
+  }
+  .switch input:checked + .slider { background: var(--md-primary); border-color: var(--md-primary); }
+  .switch input:checked + .slider::before {
+    transform: translateY(-50%) translateX(calc(20px * var(--ui-scale)));
+    background: var(--md-on-primary);
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="title"><span class="emoji">✅</span> 今日待办</div>
+    <button class="icon-btn" id="settingsBtn" aria-label="设置" title="设置">⚙️</button>
+  </div>
+
+  <div class="main">
+    <div class="side-panel">
+      <div class="input-row">
+        <div class="textfield">
+          <input type="text" id="todoInput" placeholder="输入新待办…" maxlength="50" autocomplete="off">
+        </div>
+        <button class="add-btn" id="addBtn">＋</button>
+      </div>
+
+      <div class="stat-card">
+        <div>
+          <div class="label">待完成</div>
+          <div class="num" id="remainingNum">0</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="label">已完成</div>
+          <div class="num" id="doneNum" style="color: var(--md-on-surface-variant);">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-panel">
+      <div class="list-header">
+        <span>待办清单</span>
+        <button class="clear-btn" id="clearBtn">清除已完成</button>
+      </div>
+      <ul class="todo-list" id="todoList"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-panel">
+    <div class="settings-title">
+      <span>⚙️ 设置</span>
+      <button class="icon-btn" id="closeSettings" style="width:40px;height:40px;font-size:18px;">✕</button>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-label">
+        <span>界面大小</span>
+        <span class="settings-value" id="scaleValue">100%</span>
+      </div>
+      <input type="range" class="md3-slider" id="scaleSlider" min="0.8" max="1.4" step="0.05" value="1">
+      <div class="slider-marks">
+        <span>小</span><span>标准</span><span>大</span>
+      </div>
+    </div>
+
+    <div class="settings-group">
+      <div class="switch-row">
+        <span>音效</span>
+        <label class="switch"><input type="checkbox" id="soundToggle" checked><span class="slider"></span></label>
+      </div>
+      <div class="switch-row">
+        <span>触觉震动</span>
+        <label class="switch"><input type="checkbox" id="vibrateToggle" checked><span class="slider"></span></label>
+      </div>
+      <div class="switch-row">
+        <span>深色模式</span>
+        <label class="switch"><input type="checkbox" id="darkToggle"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-text" id="resetSettings">重置</button>
+      <button class="btn-filled" id="saveSettings">完成</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var todos = [];
+  var nextId = 1;
+  var activePopup = null;
+  var dismissOverlay = null;
+  var activeAudioCtx = null;
+  var escHandler = null;
+  var popupTimeouts = [];
+
+  var settings = { scale: 1, sound: true, vibrate: true, dark: false };
+
+  var todoListEl = document.getElementById('todoList');
+  var todoInput = document.getElementById('todoInput');
+  var addBtn = document.getElementById('addBtn');
+  var clearBtn = document.getElementById('clearBtn');
+  var remainingNum = document.getElementById('remainingNum');
+  var doneNum = document.getElementById('doneNum');
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsOverlay = document.getElementById('settingsOverlay');
+  var closeSettingsBtn = document.getElementById('closeSettings');
+  var saveSettingsBtn = document.getElementById('saveSettings');
+  var resetSettingsBtn = document.getElementById('resetSettings');
+  var scaleSlider = document.getElementById('scaleSlider');
+  var scaleValue = document.getElementById('scaleValue');
+  var soundToggle = document.getElementById('soundToggle');
+  var vibrateToggle = document.getElementById('vibrateToggle');
+  var darkToggle = document.getElementById('darkToggle');
+
+  // ========== 音效 ==========
+  function playDing() {
+    if (!settings.sound) return;
+    try {
+      if (!activeAudioCtx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        activeAudioCtx = new AC();
+      }
+      var ctx = activeAudioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+      var now = ctx.currentTime;
+
+      var osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1318.5, now);
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+
+      var osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(2637, now);
+      var gain2 = ctx.createGain();
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.1, now + 0.005);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+
+      var delay = ctx.createDelay();
+      delay.delayTime.value = 0.06;
+      var feedback = ctx.createGain();
+      feedback.gain.value = 0.25;
+      var wetGain = ctx.createGain();
+      wetGain.gain.value = 0.2;
+
+      osc.connect(gain);
+      osc2.connect(gain2);
+      gain.connect(ctx.destination);
+      gain2.connect(ctx.destination);
+      gain.connect(delay);
+      delay.connect(feedback);
+      feedback.connect(delay);
+      delay.connect(wetGain);
+      wetGain.connect(ctx.destination);
+
+      osc.start(now);
+      osc2.start(now);
+      osc.stop(now + 1.0);
+      osc2.stop(now + 0.6);
+    } catch (e) {}
+  }
+
+  function vibrate() {
+    if (!settings.vibrate) return;
+    if (navigator.vibrate) {
+      try { navigator.vibrate(15); } catch (e) {}
+    }
+  }
+
+  // ========== 存储 ==========
+  function saveTodos() {
+    try { localStorage.setItem('md3-todos-v10', JSON.stringify(todos)); } catch (e) {}
+  }
+
+  function loadTodos() {
+    try {
+      var raw = localStorage.getItem('md3-todos-v10');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          todos = parsed;
+          var maxId = 0;
+          for (var i = 0; i < todos.length; i++) {
+            if (todos[i].id > maxId) maxId = todos[i].id;
+          }
+          nextId = maxId + 1;
+          return;
+        }
+      }
+    } catch (e) {}
+    todos = [
+      { id: nextId++, text: '看圆 0.6 鼓成胖胶囊', completed: false },
+      { id: nextId++, text: '文字保持正着不斜', completed: false },
+      { id: nextId++, text: '听那声清脆的叮', completed: false }
+    ];
+  }
+
+  function saveSettings() {
+    try { localStorage.setItem('md3-settings-v10', JSON.stringify(settings)); } catch (e) {}
+  }
+
+  function loadSettings() {
+    try {
+      var raw = localStorage.getItem('md3-settings-v10');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          if (typeof parsed.scale === 'number') settings.scale = parsed.scale;
+          if (typeof parsed.sound === 'boolean') settings.sound = parsed.sound;
+          if (typeof parsed.vibrate === 'boolean') settings.vibrate = parsed.vibrate;
+          if (typeof parsed.dark === 'boolean') settings.dark = parsed.dark;
+        }
+      }
+    } catch (e) {}
+  }
+
+  function applySettings() {
+    document.documentElement.style.setProperty('--ui-scale', settings.scale);
+    document.body.classList.toggle('dark', settings.dark);
+    scaleSlider.value = settings.scale;
+    scaleValue.textContent = Math.round(settings.scale * 100) + '%';
+    soundToggle.checked = settings.sound;
+    vibrateToggle.checked = settings.vibrate;
+    darkToggle.checked = settings.dark;
+  }
+
+  // ========== 渲染 ==========
+  function render() {
+    todoListEl.innerHTML = '';
+
+    if (todos.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = '暂无待办 · 添加一条开始吧 ✨';
+      todoListEl.appendChild(empty);
+    } else {
+      todos.forEach(function (todo) {
+        var li = document.createElement('li');
+        li.className = 'todo-item' + (todo.completed ? ' completed' : '');
+        li.dataset.id = todo.id;
+
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'checkbox';
+        cb.checked = todo.completed;
+        cb.addEventListener('change', function (e) {
+          e.stopPropagation();
+          if (cb.checked && !todo.completed) {
+            handleComplete(todo, cb);
+          } else {
+            todo.completed = cb.checked;
+            saveTodos();
+            render();
+          }
+        });
+
+        var text = document.createElement('div');
+        text.className = 'todo-text';
+        text.textContent = todo.text;
+
+        var del = document.createElement('button');
+        del.className = 'delete-btn';
+        del.textContent = '✕';
+        del.addEventListener('click', function (e) {
+          e.stopPropagation();
+          todos = todos.filter(function (t) { return t.id !== todo.id; });
+          saveTodos();
+          render();
+        });
+
+        li.appendChild(cb);
+        li.appendChild(text);
+        li.appendChild(del);
+        todoListEl.appendChild(li);
+      });
+    }
+
+    var remaining = 0, done = 0;
+    for (var i = 0; i < todos.length; i++) {
+      if (todos[i].completed) done++;
+      else remaining++;
+    }
+    remainingNum.textContent = remaining;
+    doneNum.textContent = done;
+  }
+
+  // ========== 完成 → 圆鼓成胖胶囊 ==========
+  function handleComplete(todo, checkboxEl) {
+    todo.completed = true;
+    saveTodos();
+
+    var rect = checkboxEl.getBoundingClientRect();
+    var startX = rect.left + rect.width / 2;
+    var startY = rect.top + rect.height / 2;
+
+    if (activePopup) closePopup(true);
+
+    createPopup(startX, startY);
+    playDing();
+    vibrate();
+
+    setTimeout(function () { render(); }, 50);
+  }
+
+  function createPopup(startX, startY) {
+    for (var i = 0; i < popupTimeouts.length; i++) clearTimeout(popupTimeouts[i]);
+    popupTimeouts = [];
+
+    // 蒙层
+    dismissOverlay = document.createElement('div');
+    dismissOverlay.className = 'dismiss-overlay';
+    dismissOverlay.addEventListener('click', function () { closePopup(); });
+    document.body.appendChild(dismissOverlay);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        dismissOverlay.classList.add('show');
+      });
+    });
+
+    // 弹窗
+    var popup = document.createElement('div');
+    popup.className = 'done-popup';
+    popup.innerHTML =
+      '<div class="popup-content">' +
+        '<div class="popup-check">' +
+          '<svg viewBox="0 0 24 24"><path d="M4 12.5 L10 18.5 L20 6"/></svg>' +
+        '</div>' +
+        '<span class="popup-label">已完成</span>' +
+      '</div>';
+
+    var startSize = 24;
+    popup.style.left = (startX - startSize / 2) + 'px';
+    popup.style.top = (startY - startSize / 2) + 'px';
+    popup.style.opacity = '1';
+    document.body.appendChild(popup);
+    activePopup = popup;
+
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var centerX = vw / 2;
+    var centerY = vh / 2;
+
+    // ===== 中间那个大圆（唯一基准） =====
+    var circleSize = Math.min(vw, vh) * 0.6;
+
+    // ===== 终态：胖胶囊（/ 方向） =====
+    var endHeight = circleSize;
+    var endWidth = Math.min(circleSize * 1.4, vw * 0.88);
+    var endRadius = endHeight / 2;
+    var tilt = 45;
+
+    var anim = popup.animate([
+      {
+        left: (startX - startSize / 2) + 'px',
+        top: (startY - startSize / 2) + 'px',
+        width: startSize + 'px',
+        height: startSize + 'px',
+        borderRadius: '50%',
+        transform: 'rotate(0deg)',
+        boxShadow: '0 0 0 rgba(0,0,0,0)',
+        offset: 0
+      },
+      {
+        left: (startX + (centerX - startX) * 0.22 - circleSize * 0.3) + 'px',
+        top: (startY + (centerY - startY) * 0.22 - circleSize * 0.3) + 'px',
+        width: (circleSize * 0.6) + 'px',
+        height: (circleSize * 0.6) + 'px',
+        borderRadius: '50%',
+        transform: 'rotate(' + (tilt * 0.4) + 'deg)',
+        boxShadow: '0 6px 20px rgba(103,80,164,0.3)',
+        offset: 0.22
+      },
+      {
+        left: (centerX - circleSize / 2) + 'px',
+        top: (centerY - circleSize / 2) + 'px',
+        width: circleSize + 'px',
+        height: circleSize + 'px',
+        borderRadius: '50%',
+        transform: 'rotate(' + (tilt * 0.8) + 'deg)',
+        boxShadow: '0 12px 36px rgba(103,80,164,0.4)',
+        offset: 0.5
+      },
+      {
+        left: (centerX - endWidth * 0.55) + 'px',
+        top: (centerY - endHeight * 0.6) + 'px',
+        width: (endWidth * 1.06) + 'px',
+        height: (endHeight * 1.06) + 'px',
+        borderRadius: ((endHeight * 1.06) / 2) + 'px',
+        transform: 'rotate(' + (tilt + 3) + 'deg)',
+        boxShadow: '0 18px 48px rgba(103,80,164,0.55), 0 28px 72px rgba(0,0,0,0.32)',
+        offset: 0.82
+      },
+      {
+        left: (centerX - endWidth / 2) + 'px',
+        top: (centerY - endHeight / 2) + 'px',
+        width: endWidth + 'px',
+        height: endHeight + 'px',
+        borderRadius: endRadius + 'px',
+        transform: 'rotate(' + tilt + 'deg)',
+        boxShadow: '0 14px 40px rgba(103,80,164,0.5), 0 24px 72px rgba(0,0,0,0.32)',
+        offset: 1
+      }
+    ], {
+      duration: 1000,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      fill: 'forwards'
+    });
+
+    anim.onfinish = function () {
+      if (activePopup !== popup) return;
+      popup.classList.add('show');
+    };
+
+    popup.addEventListener('click', function (e) {
+      e.stopPropagation();
+      closePopup();
+    });
+
+    escHandler = function (e) {
+      if (e.key === 'Escape') closePopup();
+    };
+    document.addEventListener('keydown', escHandler);
+  }
+
+  function closePopup(immediate) {
+    if (!activePopup) return;
+    var popup = activePopup;
+    var overlay = dismissOverlay;
+    activePopup = null;
+    dismissOverlay = null;
+
+    for (var i = 0; i < popupTimeouts.length; i++) clearTimeout(popupTimeouts[i]);
+    popupTimeouts = [];
+
+    if (escHandler) {
+      document.removeEventListener('keydown', escHandler);
+      escHandler = null;
+    }
+
+    var rect = popup.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top + rect.height / 2;
+
+    try {
+      popup.getAnimations().forEach(function (a) { a.cancel(); });
+    } catch (e) {}
+
+    if (immediate) {
+      popup.remove();
+      if (overlay) overlay.remove();
+      return;
+    }
+
+    var shrink = popup.animate([
+      {
+        left: (cx - rect.width / 2) + 'px',
+        top: (cy - rect.height / 2) + 'px',
+        width: rect.width + 'px',
+        height: rect.height + 'px',
+        borderRadius: (rect.height / 2) + 'px',
+        transform: 'rotate(45deg)',
+        opacity: 1,
+        boxShadow: '0 14px 40px rgba(103,80,164,0.5), 0 24px 72px rgba(0,0,0,0.32)',
+        offset: 0
+      },
+      {
+        left: (cx - 12) + 'px',
+        top: (cy - 12) + 'px',
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        transform: 'rotate(0deg)',
+        opacity: 0.85,
+        boxShadow: '0 0 0 rgba(0,0,0,0)',
+        offset: 0.75
+      },
+      {
+        left: (cx - 12) + 'px',
+        top: (cy - 12) + 'px',
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        transform: 'rotate(0deg)',
+        opacity: 0,
+        boxShadow: '0 0 0 rgba(0,0,0,0)',
+        offset: 1
+      }
+    ], {
+      duration: 420,
+      easing: 'cubic-bezier(0.4, 0, 1, 1)',
+      fill: 'forwards'
+    });
+
+    if (overlay) {
+      overlay.classList.remove('show');
+      var ov = overlay;
+      var t = setTimeout(function () { ov.remove(); }, 320);
+      popupTimeouts.push(t);
+    }
+
+    shrink.onfinish = function () {
+      popup.remove();
+    };
+  }
+
+  // ========== 添加 ==========
+  function addTodo() {
+    var text = todoInput.value.trim();
+    if (!text) { todoInput.focus(); return; }
+    todos.push({ id: nextId++, text: text, completed: false });
+    todoInput.value = '';
+    saveTodos();
+    render();
+    todoInput.focus();
+  }
+
+  addBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    addTodo();
+  });
+
+  todoInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); addTodo(); }
+  });
+
+  clearBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var hasCompleted = false;
+    for (var i = 0; i < todos.length; i++) {
+      if (todos[i].completed) { hasCompleted = true; break; }
+    }
+    if (!hasCompleted) return;
+    todos = todos.filter(function (t) { return !t.completed; });
+    saveTodos();
+    render();
+  });
+
+  // ========== 设置面板 ==========
+  function openSettings() { settingsOverlay.classList.add('open'); }
+  function closeSettingsFn() { settingsOverlay.classList.remove('open'); }
+
+  settingsBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    openSettings();
+  });
+  closeSettingsBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    closeSettingsFn();
+  });
+  settingsOverlay.addEventListener('click', function (e) {
+    if (e.target === settingsOverlay) closeSettingsFn();
+  });
+
+  scaleSlider.addEventListener('input', function () {
+    settings.scale = parseFloat(scaleSlider.value);
+    scaleValue.textContent = Math.round(settings.scale * 100) + '%';
+    document.documentElement.style.setProperty('--ui-scale', settings.scale);
+  });
+
+  soundToggle.addEventListener('change', function () {
+    settings.sound = soundToggle.checked;
+  });
+  vibrateToggle.addEventListener('change', function () {
+    settings.vibrate = vibrateToggle.checked;
+  });
+  darkToggle.addEventListener('change', function () {
+    settings.dark = darkToggle.checked;
+    document.body.classList.toggle('dark', settings.dark);
+  });
+
+  saveSettingsBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    saveSettings();
+    closeSettingsFn();
+  });
+
+  resetSettingsBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    settings.scale = 1;
+    settings.sound = true;
+    settings.vibrate = true;
+    settings.dark = false;
+    applySettings();
+  });
+
+  // ========== 启动 ==========
+  loadSettings();
+  applySettings();
+  loadTodos();
+  render();
+
+  function unlockAudio() {
+    try {
+      if (!activeAudioCtx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) activeAudioCtx = new AC();
+      }
+      if (activeAudioCtx && activeAudioCtx.state === 'suspended') {
+        activeAudioCtx.resume();
+      }
+    } catch (e) {}
+    document.removeEventListener('click', unlockAudio);
+    document.removeEventListener('touchstart', unlockAudio);
+  }
+  document.addEventListener('click', unlockAudio);
+  document.addEventListener('touchstart', unlockAudio);
+
+})();
+</script>
+</body>
+</html>
